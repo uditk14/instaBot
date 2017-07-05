@@ -1,5 +1,5 @@
 # including requests library
-import requests
+import requests,urllib
 
 # Access Token
 APP_ACCESS_TOKEN = '1470977960.d177b11.794aeb1c52f6466389e3836ef0c16b57'
@@ -61,6 +61,27 @@ def get_user_info(insta_username):
     else:
         print 'Status code other than 200 received!'
 
+
+# Function to get own recent post
+def get_own_post():
+    request_url = (BASE_URL + 'users/self/media/recent/?access_token=%s') % (APP_ACCESS_TOKEN)
+    print 'GET request url : %s' % (request_url)
+    own_media = requests.get(request_url).json()
+
+    if own_media['meta']['code'] == 200:
+        if len(own_media['data']):
+            image_name = own_media['data'][0]['id'] + '.jpeg'
+            image_url = own_media['data'][0]['images']['standard_resolution']['url']
+            urllib.urlretrieve(image_url, image_name)
+            print 'Your image has been downloaded!'
+        else:
+            print 'Post does not exist!'
+    else:
+        print 'Status code other than 200 received!'
+
+
+
+# Function of starting the bot and presenting a menu
 def start_bot():
     while True:
         print '\n'
@@ -68,7 +89,7 @@ def start_bot():
         print 'Here are your menu options:'
         print "a.Get your own details\n"
         print "b.Get details of a user by username\n"
-        #print "c.Get your own recent post\n"
+        print "c.Get your own recent post\n"
         #print "d.Get the recent post of a user by username\n"
         #print "e.Get a list of people who have liked the recent post of a user\n"
         #print "f.Like the recent post of a user\n"
@@ -83,8 +104,8 @@ def start_bot():
         elif choice=="b":
             insta_username = raw_input("Enter the username of the user: ")
             get_user_info(insta_username)
-        #elif choice=="c":
-        #    get_own_post()
+        elif choice=="c":
+            get_own_post()
         #elif choice=="d":
         #    insta_username = raw_input("Enter the username of the user: ")
         #    get_user_post(insta_username)
