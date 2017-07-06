@@ -1,11 +1,12 @@
-# including requests library
+# including libraries
 import requests,urllib
 from textblob import TextBlob
 from textblob.sentiments import NaiveBayesAnalyzer
-
+from Test import get_keywords
+from Clarify_Example import get_keywords_from_image
 # Access Token
 APP_ACCESS_TOKEN = '1470977960.d177b11.794aeb1c52f6466389e3836ef0c16b57'
-
+APP_ACCESS_TOKEN_PD = 'rnaQPDGNt7ZmD8wFa1e3qlDu9SQnEf52ZGdhAJXB8Q0'
 BASE_URL = 'https://api.instagram.com/v1/'
 BASE_URL_PD = 'https://apis.paralleldots.com/'
 
@@ -169,9 +170,9 @@ def get_like_list(insta_username):
 
     if like_list['meta']['code'] == 200:
         if len(like_list['data']):
-            print 'Username: %s' % (like_list['data'][0]['username'])
-            print 'First Name: %s' % (like_list['data'][0]['first_name'])
-            print 'Last Name: %s' % (like_list['data'][0]['last_name'])
+            for i in range(0,len(like_list['data'])):
+                print 'Username: %s' % (like_list['data'][i]['username'])
+
         else:
             print 'There is no like for this user media!'
     else:
@@ -255,8 +256,8 @@ def insta_marketing(insta_keyword,insta_promotional_message,insta_username):
 
         if len(comment_info['data']):
 
-            for x in range(0, len(comment_info['data'])):
-                comment_text = comment_info['data'][x]['text']
+            for index_var in range(0, len(comment_info['data'])):
+                comment_text = comment_info['data'][index_var]['text']
                 print comment_text
                 comment_words = comment_text.split()
                 print comment_words
@@ -272,38 +273,86 @@ def insta_marketing(insta_keyword,insta_promotional_message,insta_username):
     print 'GET request url : %s' % (request_url)
     media_data=requests.get(request_url).json()
 
-    print media_data
+    if(media_data) is not None:
 
-    if (media_data['meta']['code']== 200):
+        print media_data
 
-        if len(media_data['data']['tags']):
-            insta_tag = media_data['data']['tags']
-            for k in range(0,insta_tag.__len__()):
-                if insta_tag[k]==insta_keyword:
-                    print insta_tag[k]
-                    post_promotional_comment(insta_promotional_message,insta_username)
-                    break
-                else:
-                    print 'Not matched'
+        if (media_data['meta']['code']== 200):
+
+            if len(media_data['data']['tags']):
+                insta_tag = media_data['data']['tags']
+                for index_var in range(0,insta_tag.__len__()):
+                    if insta_tag[index_var]==insta_keyword:
+                        print insta_tag[index_var]
+                        post_promotional_comment(insta_promotional_message,insta_username)
+                        break
+                    else:
+                        print 'Not matched'
+            else:
+                print 'No tags'
+
+
+            if  (media_data['data']['caption']) is  not  None:
+                insta_caption = media_data['data']['caption']['text']
+                type(insta_caption)
+                insta_caption_words = insta_caption.split()
+
+                # using paralleldots to check keywords of caption
+                c= insta_caption.encode('ascii','ignore')
+                print type(c)
+                op_of_func=get_keywords(c ,APP_ACCESS_TOKEN_PD)
+
+                if(len(op_of_func) >0):
+                    keywords_in_caption = op_of_func[0]
+
+                    print op_of_func[0]
+                    print type(op_of_func)
+                    for p in range(0, keywords_in_caption.__len__()):
+                        if (keywords_in_caption[p] == insta_keyword):
+                            print keywords_in_caption[p]
+                            post_promotional_comment(insta_promotional_message, insta_username)
+                            break
+                        else:
+                            print 'Not matched'
+
+                # directly checking all words of caption
+                for p in range(0, insta_caption_words.__len__()):
+                    if (insta_caption_words[p] == insta_keyword):
+                        print insta_caption_words[p]
+                        post_promotional_comment(insta_promotional_message, insta_username)
+                        break
+                    else:
+                        print 'Not matched'
+            else:
+                print 'No caption'
         else:
-            print 'No tags'
+            'Status code other than 200 received'
 
-        if len(media_data['data']['caption']['text']):
-            insta_caption = media_data['data']['caption']['text']
-            insta_caption_words = insta_caption.split()
 
-            for p in range(0, insta_caption_words.__len__()):
-                if (insta_caption_words[p] == insta_keyword):
-                    print insta_caption_words[p]
-                    post_promotional_comment(insta_promotional_message, insta_username)
-                    break
-                else:
-                    print 'Not matched'
-        else:
-            print 'No caption'
+        #Image processing using Clarifai
+        url_of_image1 =media_data['data']['images']['standard_resolution']['url']
+        print type(url_of_image1)
+        url_of_image=url_of_image1.encode('ascii','ignore')
+        print type(url_of_image)
+
+        image_keywords=get_keywords_from_image(url_of_image)
+        print image_keywords
+        print type(image_keywords)
+        arr_of_dict=image_keywords['outputs'][0]['data']['concepts']
+        print type(arr_of_dict)
+        print arr_of_dict
+
+        for i in range(0,len(arr_of_dict)):
+            keyword = arr_of_dict[i]['name']
+            print keyword
+            if (keyword == insta_keyword):
+                print arr_of_dict[i]['name']
+                post_promotional_comment(insta_promotional_message, insta_username)
+                break
+            else:
+                print 'Not matched'
     else:
-        'Status code other than 200 received'
-
+        print 'media doesn\'t exist'
 
 # Function to start the bot and presenting a menu
 
@@ -363,4 +412,3 @@ def start_bot():
 
 start_bot()
 
-#Hastag , Captions, Clarifai, Comments
