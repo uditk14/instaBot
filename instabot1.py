@@ -7,6 +7,7 @@ from textblob.sentiments import NaiveBayesAnalyzer
 APP_ACCESS_TOKEN = '1470977960.d177b11.794aeb1c52f6466389e3836ef0c16b57'
 
 BASE_URL = 'https://api.instagram.com/v1/'
+BASE_URL_PD = 'https://apis.paralleldots.com/'
 
 
 # Function for fetching own details
@@ -157,7 +158,7 @@ def post_a_comment(insta_username):
 
 
 # function to get list of users who like user's media
-'''
+
 def get_like_list(insta_username):
     media_id = get_post_id(insta_username)
     request_url = (BASE_URL + 'media/%s/likes?access_token=%s') % (media_id,APP_ACCESS_TOKEN)
@@ -175,7 +176,7 @@ def get_like_list(insta_username):
             print 'There is no like for this user media!'
     else:
         print 'Query was unsuccessful!'
-'''
+
 
 # function to get list of comments
 def get_comment_list(insta_username):
@@ -195,7 +196,7 @@ def get_comment_list(insta_username):
 
 
 # function to delete negative comment
-'''
+
 def delete_negative_comment(insta_username):
     media_id = get_post_id(insta_username)
     request_url = (BASE_URL + 'media/%s/comments/?access_token=%s') % (media_id, APP_ACCESS_TOKEN)
@@ -227,19 +228,85 @@ def delete_negative_comment(insta_username):
     else:
         print 'Status code other than 200 received!'
 
-'''
+
+def post_promotional_comment(insta_promotional_message, insta_username):
+    media_id = get_post_id(insta_username)
+    payload = {"access_token": APP_ACCESS_TOKEN, "text": insta_promotional_message}
+    request_url = (BASE_URL + 'media/%s/comments') % (media_id)
+    print 'POST request url : %s' % (request_url)
+
+    make_comment = requests.post(request_url, payload).json()
+
+    if make_comment['meta']['code'] == 200:
+        print "Successfully added a promotional comment!"
+    else:
+        print "Unable to add comment. Try again!"
 
 
+# function to do marketing
+def insta_marketing(insta_keyword,insta_promotional_message,insta_username):
+    # Analyze comments
+    media_id = get_post_id(insta_username)
+    request_url = (BASE_URL + 'media/%s/comments/?access_token=%s') % (media_id, APP_ACCESS_TOKEN)
+    print 'GET request url : %s' % (request_url)
+    comment_info = requests.get(request_url).json()
+    print comment_info
+    if comment_info['meta']['code'] == 200:
+
+        if len(comment_info['data']):
+
+            for x in range(0, len(comment_info['data'])):
+                comment_text = comment_info['data'][x]['text']
+                print comment_text
+                comment_words = comment_text.split()
+                print comment_words
+                for i in range(0,comment_words.__len__()):
+                    if(comment_words[i] == insta_keyword):
+                        post_promotional_comment(insta_promotional_message,insta_username)
+                        break
+    else:
+        print 'Status code other than 200 received'
+
+    # Analyze tags and captions
+    request_url = (BASE_URL+'media/%s?access_token=%s') % (media_id, APP_ACCESS_TOKEN)
+    print 'GET request url : %s' % (request_url)
+    media_data=requests.get(request_url).json()
+
+    print media_data
+
+    if (media_data['meta']['code']== 200):
+
+        if len(media_data['data']['tags']):
+            insta_tag = media_data['data']['tags']
+            for k in range(0,insta_tag.__len__()):
+                if insta_tag[k]==insta_keyword:
+                    print insta_tag[k]
+                    post_promotional_comment(insta_promotional_message,insta_username)
+                    break
+                else:
+                    print 'Not matched'
+        else:
+            print 'No tags'
+
+        if len(media_data['data']['caption']['text']):
+            insta_caption = media_data['data']['caption']['text']
+            insta_caption_words = insta_caption.split()
+
+            for p in range(0, insta_caption_words.__len__()):
+                if (insta_caption_words[p] == insta_keyword):
+                    print insta_caption_words[p]
+                    post_promotional_comment(insta_promotional_message, insta_username)
+                    break
+                else:
+                    print 'Not matched'
+        else:
+            print 'No caption'
+    else:
+        'Status code other than 200 received'
 
 
+# Function to start the bot and presenting a menu
 
-
-
-
-
-
-
-# Function of starting the bot and presenting a menu
 def start_bot():
     while True:
         print '\n'
@@ -254,7 +321,8 @@ def start_bot():
         print "g.Get a list of comments on the recent post of a user\n"
         print "h.Make a comment on the recent post of a user\n"
         print "i.Delete negative comments from the recent post of a user\n"
-        print "j.Exit"
+        print "j.To do marketing using specific keywords"
+        print "k. To exit"
 
         choice=raw_input("Enter you choice: ")
 
@@ -283,9 +351,16 @@ def start_bot():
         elif choice=="i":
             insta_username = raw_input("Enter the username of the user: ")
             delete_negative_comment(insta_username)
-        elif choice=="j":
+        elif choice == "j":
+            insta_keyword = raw_input("Enter the keyword to be searched :")
+            insta_promotional_message = raw_input("Enter the text to be commented :")
+            insta_username = raw_input("Enter the username :")
+            insta_marketing(insta_keyword,insta_promotional_message,insta_username)
+        elif choice=="k":
             exit()
         else:
             print "wrong choice"
 
 start_bot()
+
+#Hastag , Captions, Clarifai, Comments
